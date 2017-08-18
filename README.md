@@ -1,4 +1,5 @@
-# adjustVoFScalarFields
+# Application
+adjustVoFScalarFields
 
 # Description
 Approximates a given volScalarFied using level sets for second-order accuracy (inspired by setWaves OpenFOAM's utility).
