@@ -1,0 +1,129 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  dev                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Scripting variables (not read by the solver)* * * * * * * * * * * * * * * //
+
+PLATE_WIDTH_X       6000;
+PLATE_THICKNESS_Y   4000;
+PLATE_LENGTH_Z      6000;
+
+UPPER_GAP_Y         1500;
+LOWER_GAP_Y         1500;
+
+CELL_SIZE           500;
+
+CELLS_X             #calc "$PLATE_WIDTH_X/$CELL_SIZE";
+CELLS_Z             #calc "$PLATE_LENGTH_Z/$CELL_SIZE";
+
+CELLS_Y_UPPER_GAP   #calc "$UPPER_GAP_Y/$CELL_SIZE";
+CELLS_Y_PLATE       #calc "$PLATE_THICKNESS_Y/$CELL_SIZE";
+CELLS_Y_LOWER_GAP   #calc "$LOWER_GAP_Y/$CELL_SIZE";
+
+HALF_X              #calc "$PLATE_WIDTH_X/2";
+HALF_Z              #calc "$PLATE_LENGTH_Z/2";
+
+negHALF_X           #calc "-$HALF_X";
+negHALF_Z           #calc "-$HALF_Z";
+
+Y_REF               0;
+Y_TOP               #calc "$Y_REF+$UPPER_GAP_Y";
+Y_PLATE             #calc "$Y_REF-$PLATE_THICKNESS_Y";
+Y_BOTTOM            #calc "$Y_REF-$PLATE_THICKNESS_Y-$LOWER_GAP_Y";
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+convertToMeters 1e-6;
+
+vertices
+(
+  (  $negHALF_X    $Y_BOTTOM    $negHALF_Z )
+  (  $negHALF_X    $Y_BOTTOM       $HALF_Z )
+  (     $HALF_X    $Y_BOTTOM       $HALF_Z )
+  (     $HALF_X    $Y_BOTTOM    $negHALF_Z )
+
+  (  $negHALF_X    $Y_PLATE     $negHALF_Z )
+  (  $negHALF_X    $Y_PLATE        $HALF_Z )
+  (     $HALF_X    $Y_PLATE        $HALF_Z )
+  (     $HALF_X    $Y_PLATE     $negHALF_Z )
+
+  (  $negHALF_X    $Y_REF      $negHALF_Z )
+  (  $negHALF_X    $Y_REF         $HALF_Z )
+  (     $HALF_X    $Y_REF         $HALF_Z )
+  (     $HALF_X    $Y_REF      $negHALF_Z )
+
+  (  $negHALF_X    $Y_TOP      $negHALF_Z )
+  (  $negHALF_X    $Y_TOP         $HALF_Z )
+  (     $HALF_X    $Y_TOP         $HALF_Z )
+  (     $HALF_X    $Y_TOP      $negHALF_Z )
+);
+
+blocks
+(
+  hex ( 0  3  7  4  1  2  6  5 ) atmosphereBottom   ( $CELLS_X  $CELLS_Y_LOWER_GAP   $CELLS_Z )  simpleGrading  (1 1 1)
+  hex ( 4  7 11  8  5  6 10  9 ) workpiece          ( $CELLS_X  $CELLS_Y_PLATE       $CELLS_Z )  simpleGrading  (1 1 1)
+  hex ( 8 11 15 12  9 10 14 13 ) atmosphereTop      ( $CELLS_X  $CELLS_Y_UPPER_GAP   $CELLS_Z )  simpleGrading  (1 1 1)
+);
+
+edges
+(
+);
+
+boundary
+(
+    upperBoundary
+    {
+        type patch;
+        faces
+        (
+            ( 12 13 14 15 )
+        );
+    }
+
+    atmosphere
+    {
+        type patch;
+        faces
+        (
+            ( 3 7 4 0 )
+            ( 0 4 5 1 )
+            ( 1 5 6 2 )
+            ( 2 6 7 3 )
+            ( 0 1 2 3 )
+
+            ( 11 8 12 15 )
+            ( 8 9 13 12 )
+            ( 9 10 14 13 )
+            ( 10 11 15 14 )
+            //( 12 13 14 15 )
+        );
+    }
+
+    workpiece
+    {
+        type patch;
+        faces
+        (
+            ( 7 4 8 11 )
+            ( 4 5 9 8 )
+            ( 5 6 10 9 )
+            ( 6 7 11 10 )
+        );
+    }
+);
+
+mergePatchPairs
+(
+);

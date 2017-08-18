@@ -1,0 +1,162 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  3.0.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    "alpha.*"
+    {
+        nAlphaCorr      1;
+        nAlphaSubCycles 3;
+        cAlpha          1;
+
+        MULESCorr       yes;
+        nLimiterIter    3;
+
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-8;
+        relTol          0;
+        maxIter         20;
+    }
+
+
+    p_rgh   //interDyMFoam
+    {
+        solver          GAMG;
+        tolerance       1e-06;
+        relTol          0.01;
+        smoother        DIC;
+        nPreSweeps      0;
+        nPostSweeps     2;
+        nFinestSweeps   2;
+        cacheAgglomeration false;
+        nCellsInCoarsestLevel 10;
+        agglomerator    faceAreaPair;
+        mergeLevels     1;
+    }
+
+    p_rghFinal
+    {
+        $p_rgh;
+        relTol          0;
+    }
+
+    "pcorr.*"
+    {
+        $p_rghFinal;
+        tolerance       0.0001;
+    }
+
+    "(U|UFinal)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-08;
+        relTol          0;
+        nSweeps         1;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor   no;
+    correctPhi          yes;
+    nOuterCorrectors    1;
+    nCorrectors         2;
+    nNonOrthogonalCorrectors 1;
+
+    pRefCell        0;
+    pRefValue       1e5;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        ".*" 1;
+    }
+}
+
+cache
+{
+    grad(U);
+}
+
+// ************************************************************************* //
+
+// Linear-solvers used for each discretised equation.
+// Available solvers:
+    // PCG          (*)     Preconditioned (bi-)conjugate gradient for symmetric matrices
+    // PBiCG        (*)     Preconditioned (bi-)conjugate gradient for asymmetric matrices
+    // smoothSolver (**)    Solver using a smoother
+    // GAMG         (***)   Generalised geometric-algebraic multi-grid
+    // diagonal             Diagonal solver for explicit systems
+
+// The solvers distinguish between symmetric matrices and asymmetric matrices.OpenFOAM will
+// produce an error message to advise the user if an inappropriate solver has been selected.
+// The solver relative tolerance limits the relative improvement from initial to final solution.
+
+// The residual is evaluated by substituting the current solution into the equation
+// and taking the magnitude of the difference between the left and right hand sides;
+// it is also normalised to make it independent of the scale of the problem being analysed.
+// In transient simulations, it is usual to set the solver relative tolerance to 0 to force the
+// solution to converge to the solver tolerance in each time step.
+
+// Stop conditions:
+    // tolerance            solver tolerance
+    // relTol               ratio of current to initial residuals
+    // maxIter (optional)   maximum number of iterations
+
+// (*) Options for preconditioning of matrices in the conjugate gradient solvers (preconditioner):
+
+    // DIC          Diagonal incomplete-Cholesky (symmetric)
+    // FDIC         Faster diagonal incomplete-Cholesky (DIC with caching)
+    // DILU         Diagonal incomplete-LU (asymmetric)
+    // diagonal     Diagonal
+    // GAMG         Geometric-algebraic multi-grid
+    // none         No preconditioning
+
+// (**) Smoothers:
+    // GaussSeidel      Gauss-Seidel (generally the most reliable option)
+    // DIC              Diagonal incomplete-Cholesky (symmetric) (better convergence for bad matrices)
+    // DICGaussSeidel   Diagonal incomplete-Cholesky with Gauss-Seidel (symmetric) (includes additional
+    //                  post-smoothing using GaussSeidel, which in some cases is further benefitial)
+
+    //Smoother options:
+        // nSweeps      number of sweeps before the residual is recalculated,
+        //              following the tolerance parameters.
+
+// (***) GAMG) uses the principle of:
+    // 1. generating a quick solution on a mesh with a small number of cells;
+    // 2. mapping this solution onto a finer mesh;
+    // 3. using it as an initial guess to obtain an accurate solution on the fine mesh.
+
+    // GAMG is faster than standard methods when the increase in speed by solving first
+    // on coarser meshes outweighs the additional costs of mesh refinement and mapping of field data.
+    // In practice, GAMG starts with the mesh specified by the user and coarsens/refines
+    // the mesh in stages.
+    // nCoarsestCells       approximate mesh size at the most coarse level (number of cells)
+    // agglomerator         algorithm the agglomeration of cells is performed by (recommended faceAreaPair)
+    // cacheAgglomeration   agglomeration can be optionally cached by this switch
+    // smoother             smoothing <smoother>
+    // number of sweeps used by the smoother at different levels of mesh density:
+        // nPreSweeps           (used as the algorithm is coarsening the mesh)
+        // nFinestSweeps        (when the solution is at its finest level)
+        // nPostSweeps          (used as the algorithm is refining)
+    // mergeLevels          speed at which coarsening or refinement levels is performed (most of times
+    //                      recommended one level at a time, so mergeLevels 1. In some cases involving
+    //                      simple meshes solution can be safely speeded up with mergeLevels 2)

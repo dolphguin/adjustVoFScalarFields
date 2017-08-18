@@ -1,0 +1,49 @@
+#!/bin/bash
+
+WM_PROJECT_DIR=/opt/openfoam5
+source $WM_PROJECT_DIR/etc/bashrc
+echo "version: " && foamVersion
+
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Set case name
+caseName=`basename $PWD`
+
+# Get application directory
+application=`getApplication`
+
+cp -r 0.orig 0
+
+runApplication blockMesh
+#rm log.*
+#rm 0/*
+#cp 0.orig/alpha 0/
+
+runApplication -s cRefine topoSet -dict system/cRefine.topoSetDict
+
+#mv log.topoSet.cRefine log.topoSet.cRefine.initial
+
+runApplication refineMesh -overwrite -dict system/refineMeshDict
+
+#mv log.refineMesh log.refineMesh.initial
+
+runApplication topoSet -dict system/topoSetDict
+
+runApplication setFields
+
+runApplication adjustVoFScalarFields
+
+# Single-process jobs
+
+#    foamJob $application
+
+# Jobs in parallel
+
+    #runApplication decomposePar
+
+    #foamJob -parallel $application
+
+#------------------------------------------------------------------------------

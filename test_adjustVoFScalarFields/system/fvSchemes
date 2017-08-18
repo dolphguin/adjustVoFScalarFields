@@ -1,0 +1,181 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  3.0.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+ddtSchemes
+{
+    default         none;
+    ddt(alpha)      Euler;
+    ddt(rho)        CrankNicolson 0;
+    ddt(rho,U)      CrankNicolson 0;
+    ddt(U)          CrankNicolson 0;
+}
+// First time derivative terms:
+    // Euler            First order, bounded, implicit
+    // localEuler       Local-time step, first order, bounded, implicit
+    // CrankNicolson #  Second order, bounded, implicit ( 0 =< # =< 1; 0 ~ Euler, 1 ~ CrankNicolson)
+    // backward         Second order, implicit
+    // steadyState      Does not solve for time derivatives
+
+// d2dt2Schemes { default Euler; } // Second time derivative terms: Euler (only available)
+
+gradSchemes
+{
+    default         Gauss linear;
+}
+// Gradient terms:
+    // Gauss <interpolationScheme>  Second order, Gaussian integration
+    // leastSquares                 Second order, least squares
+    // fourth                       Fourth order, least squares
+    // cellLimited <gradScheme> #   Cell limited version of one of the above schemes
+    // faceLimited <gradScheme> #   Face limited version of one of the above schemes
+
+// The Gauss keyword specifies the standard finite volume discretisation of Gaussian integration
+// which requires the interpolation of values from cell centres to face centres.
+// Therefore, the Gauss entry must be followed by the choice of interpolation scheme.
+// It would be extremely unusual to select anything other than general interpolation schemes.
+// Example: Gauss linear (in most cases an effective choice)
+
+divSchemes
+{
+    div(rhoPhi,U)                       Gauss linearUpwind grad(U); //interFoam
+    div(phi,alpha)                      Gauss vanLeer;
+    div(phirb,alpha)                    Gauss interfaceCompression;
+    div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+
+    div((muEff*dev(T(grad(U)))))        Gauss linear;
+}
+// Divergence terms:
+// Example:
+    // div(phi,U) Gauss upwind
+
+// The Gauss scheme is the only choice of discretisation and requires a selection of
+// the interpolation scheme for the dependent field, i.e. "U" in our example.
+// The entries required are:
+    // Gauss <interpolationScheme>
+
+// The syntax here for specifying convection-specific interpolation schemes
+// does not include the flux as it is already known for the particular term, i.e. for div(phi,U).
+
+// The interpolation scheme is selected from the full range of schemes,
+// The choice critically determines numerical behaviour as described below:
+    // linear           Second order, unbounded
+    // skewLinear       Second order, (more) unbounded, skewness correction
+    // cubicCorrected   Fourth order, unbounded
+    // upwind           First order, bounded
+    // linearUpwind     First/second order, bounded
+    // QUICK            First/second order, bounded
+    // TVD schemes      First/second order, bounded (limitedLinear, vanLeer, MUSCL, limitedCubic)
+    // SFCD             Second order, bounded
+    // NVD schemes      First/second order, bounded (SFCD, Gamma)
+
+laplacianSchemes
+{
+    default         Gauss linear limited 0.7;
+}
+// Laplacian terms:
+// The Gauss scheme is the only choice of discretisation and requires a selection of both
+// an interpolation scheme for the diffusion coefficient and a surface normal gradient scheme,
+// e.g. laplacian(nu,U) Gauss <interpolationScheme> <snGradScheme>
+
+// Typical choices for the interpolation scheme are from the general schemes and, in most cases, linear.
+// The surface normal gradient scheme, selected from the table below, determines numerical behaviour:
+
+    // corrected    Unbounded, second order, conservative
+    // uncorrected  Bounded, first order, non-conservative
+    // limited #    Blend of corrected and uncorrected
+    // bounded      First order for bounded scalars
+    // fourth       Unbounded, fourth order, conservative
+
+interpolationSchemes
+{
+    default         linear;
+}
+// Interpolations of values typically from cell centres to face centres.
+
+    // Centered schemes (mostly recommended for general field interpolations):
+        // linear           Linear interpolation (central differencing)
+        // cubicCorrection  Cubic scheme
+        // midPoint         Linear interpolation with symmetric weighting
+
+// Convection-specific schemes calculate the interpolation based on the flux of the flow velocity.
+// The name of the flux field on which the interpolation is based is required
+// (in most OpenFOAM applications this is phi), e.g. upwind phi
+
+    // Upwinded (general) convection schemes:
+        // upwind           Upwind differencing
+        // linearUpwind     Linear upwind differencing
+        // skewLinear       Linear with skewness correction
+        // filteredLinear2  Linear with filtering for high-frequency ringing
+
+    // TVD (total variation diminishing) schemes:
+        // limitedLinear    limited linear differencing (also limitedLinear01, limitedLinearV)
+        // vanLeer          van Leer limiter (also limitedvanLeer -# #, vanLeer01, vanLeerV)
+        // MUSCL            MUSCL limiter (also limitedMUSCL -# #, MUSCL01)
+        // limitedCubic     Cubic limiter (also limitedCubic -# #, limitedCubic01, limitedCubicV)
+
+    // NVD (normalised variable diminishing) schemes:
+        // SFCD     Self-filtered central differencing (also SFCDV)
+        // Gamma #  Gamma differencing ( 0 =< # => 1 ) (also Gamma01, GammaV)
+
+// There are enhanced versions of some of the limited schemes for scalars
+// that need to be strictly bounded, e.g. limitedVanLeer -2.0 3.0
+// There are specialised versions of these schemes for scalar fields
+// that are commonly bounded between 0 and 1, e.g. vanLeer01
+
+// There are improved versions of some of the limited schemes for vector fields
+// in which the limiter is formulated to take into account the direction of the field.
+// These schemes are selected by adding V to the name of the general scheme, e.g. limitedLinearV
+
+// Some TVD/NVD schemes require a coefficient # ( 0 =< # =< 1 )
+    // # = 1 TVD conformance, usually giving best convergence (generally recommended)
+    // # = 0  best accuracy.
+// For example: limitedLinear phi 0.8 -1e-5 1.00001
+
+// Additional schemes such as UMIST are available.
+
+snGradSchemes
+{
+    default         corrected;
+}
+// A surface normal gradient is evaluated at a cell face;
+// it is the component, normal to the face,
+// of the gradient of values at the centres of the 2 cells that the face connects.
+
+    // corrected    Explicit non-orthogonal correction
+    // uncorrected  No non-orthogonal correction
+    // bounded      Bounded correction for positive scalars
+    // fourth       Fourth order
+    // limited #    Limited non-orthogonal correction ( 0 =< # => 1 )
+            // # = 0        uncorrected
+            // # = 0.333    non-orth. corr. =< 1/2 x orth. part
+            // # = 0.5      non-orth. corr. =< orth. part
+            // # = 1        corrected
+
+// wallDist    //interDyMFoam
+// {
+//     method meshWave;
+// }
+fluxRequired
+{
+    default              none;
+    p_rgh;
+    pcorr;
+    "alpha.*";
+    alphasMax;
+}
+
+// ************************************************************************* //
