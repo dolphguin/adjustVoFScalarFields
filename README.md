@@ -8,9 +8,9 @@ It is aimed to improve the output provided by setFields when the selected sets d
 # Notes to myself
  - Try to produce more elegant code next time.
  - Finish reading/understanding the GNUGPLv3 in order to find out whether headers of modified OpenFOAM-files can be edited or not.
- 
+
 # Requisites
- - OpenFOAM-5
- 
+ - OpenFOAM-6
+
  # Use
  Call it after setFields e.g. `adjustVoFScalarFields alpha.water`
