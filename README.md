@@ -13,4 +13,4 @@ It is aimed to improve the output provided by setFields when the selected sets d
  - OpenFOAM-6
 
  # Use
- Call it after setFields e.g. `adjustVoFScalarFields alpha.water`
+ Call it after setFields e.g. `adjustVoFScalarFields -alpha alpha.water`
